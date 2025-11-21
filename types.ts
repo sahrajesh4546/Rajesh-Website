@@ -1,3 +1,4 @@
+
 export interface Experience {
   id: number;
   role: string;
@@ -34,7 +35,7 @@ export interface Tool {
   description: string;
   category: 'AI Tools' | 'Image Tools' | 'Calculators' | 'Utilities';
   icon: string;
-  componentType: 'ai-text' | 'ai-image' | 'ai-video' | 'ai-audio' | 'image' | 'calculator' | 'utility';
+  componentType: 'ai-text' | 'ai-image-gen' | 'ai-image-edit' | 'ai-video' | 'ai-analyze' | 'ai-chat' | 'image' | 'calculator' | 'utility';
   featureId: string;
 }
 

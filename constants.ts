@@ -1,12 +1,13 @@
+
 import { Experience, Education, Skill, Service, Tool, CurrencyRate } from './types';
 
 export const PERSONAL_INFO = {
   name: "Rajesh Kumar Sah",
-  title: "Data Reporting and Visualization Specialist",
+  title: "Procurement and Data Management Professional",
   email: "sahrajesh4546@gmail.com",
   phone: "+977-9815855166",
-  location: "Imadole, Lalitpur",
-  summary: "I am an MBA and BIM Graduate with work experience in Data Analytics. I have worked with WHO and Unilever Nepal. I am skilled in managing complex datasets, collaborating with cross-functional teams, and driving organizational success through effective people management practices. Committed to continuous learning and making a positive impact in diverse work environments."
+  location: "Imadole, Lalitpur, Nepal",
+  summary: "Result-oriented Procurement and Data Management professional with an MBA in Human Resources (CGPA 3.46, completed July 2025) and a Bachelor’s degree in Information Management. Brings over four years of progressive experience across national and international organizations, specializing in MIS reporting, procurement support, contract coordination, vendor and stakeholder management, and ERP-based operational systems. Skilled in transforming complex data into actionable insights, optimizing administrative and procurement workflows, and supporting high-value organizational processes with accuracy, integrity, and strategic focus. Committed to driving operational excellence, digital transformation, and innovation through analytical thinking and a strong understanding of business systems."
 };
 
 export const EXPERIENCES: Experience[] = [
@@ -14,58 +15,54 @@ export const EXPERIENCES: Experience[] = [
     id: 1,
     role: "MIS Officer",
     company: "S.B.L Professionals Pvt. Ltd.",
-    period: "November 2024 - Present",
+    period: "Nov 2024 – Present",
     description: [
-      "Preparing daily Reports.",
-      "Making PPTs.",
-      "Maintaining Database and Troubleshooting server related issues."
+      "Prepare daily performance and system reports for executive decision-making.",
+      "Maintain databases, troubleshooting system/server issues, and document technical reports.",
+      "Assist in ensuring procurement records are accurately maintained."
     ]
   },
   {
     id: 2,
     role: "Business Growth Associate",
     company: "Worldlink Communications Ltd.",
-    period: "February 2024 - November 2024",
+    period: "Feb 2024 – Nov 2024",
     description: [
-      "Handle inquiries from enterprise customers and provide appropriate product offerings.",
-      "Establish customer mapping and devise strategies for visiting and successfully closing sales.",
-      "Formulate and implement activities related to enterprise sales.",
-      "Provide weekly, monthly, and quarterly sales activity reports to a supervisor.",
-      "Collaborate with cross-functional teams to resolve customer issues."
+      "Managed client communications, created technical solution proposals, and generated quotations.",
+      "Developed strategies for enterprise sales and sustained client relationships.",
+      "Collaborated with cross-functional teams and ensured timely payment and documentation cycles."
     ]
   },
   {
     id: 3,
     role: "MIS Sales Consultant",
     company: "Unilever Nepal",
-    period: "2022 - 2023",
+    period: "Dec 2022 – Dec 2023",
     description: [
-      "Preparing Primary and Secondary sales report from data extracted from database on daily basis using excel.",
-      "Preparing Presentation for Meetings.",
-      "Generating Purchase order and Agreements."
+      "Created daily and monthly sales reports using Excel and internal systems.",
+      "Supported the procurement department with purchase order tracking and contract follow-ups.",
+      "Prepared visual reports and presentations for management."
     ]
   },
   {
     id: 4,
-    role: "Data and Information Management Intern",
-    company: "World Health Organization",
-    period: "2021 - 2022",
+    role: "Data & Information Intern",
+    company: "World Health Organization (WHO)",
+    period: "Dec 2021 – Nov 2022",
     description: [
-      "Data and Information processing using Excel.",
-      "Preparing PPTs.",
-      "GIS Mapping.",
-      "Working on Big Data (National Health Related Data)."
+      "Managed large-scale national health datasets, including GIS-based visual mapping.",
+      "Developed dashboards and presentations used in government and global meetings.",
+      "Supported logistical coordination for research and project reporting."
     ]
   },
   {
     id: 5,
-    role: "Assistant (Finance)",
+    role: "Finance Assistant",
     company: "Big Mart",
-    period: "2019 - 2020",
+    period: "2019 – 2020",
     description: [
-      "Making Purchase Bills entries in Excel and Upload to the system.",
-      "Ledger Reconciliation with Vendors.",
-      "Bank Reconciliation."
+      "Maintained vendor ledgers and bank reconciliations.",
+      "Entered purchase bills and supported internal audit and system uploads."
     ]
   }
 ];
@@ -73,36 +70,36 @@ export const EXPERIENCES: Experience[] = [
 export const EDUCATION: Education[] = [
   {
     id: 1,
-    degree: "Master of Business Administration (MBA)",
-    institution: "DAV Business School",
-    period: "Completed July 2025",
-    details: "Graduated with CGPA of 3.24"
+    degree: "Master of Business Administration (MBA) – Human Resources",
+    institution: "DAV Business School, Kathmandu",
+    period: "Completed: July 2025",
+    details: "CGPA: 3.46"
   },
   {
     id: 2,
-    degree: "Bachelor in Information Management",
+    degree: "Bachelor's in Information Management (BIM)",
     institution: "Nagarjuna College of Information Technology",
-    period: "2016 - 2020",
-    details: "Graduated with GPA of 2.81"
+    period: "Completed: July 2020",
+    details: "GPA: 2.81"
   }
 ];
 
 export const SKILLS: Skill[] = [
   {
-    category: "Technical & Data",
-    items: ["Advanced Excel", "Data Visualization", "GIS Mapping", "Big Data Processing", "MS Office Suite"]
+    category: "Technical Skills",
+    items: ["Microsoft Excel (Advanced)", "ERP & Web-Based Management Tools", "Database Management", "Report Generation", "GIS Mapping & Data Visualization", "Basic Graphic Design Tools"]
   },
   {
-    category: "Creative & Design",
-    items: ["Graphic Designing", "Social Media Content", "Presentation Design", "Video Making"]
+    category: "Core Competencies",
+    items: ["Vendor Coordination", "Data Reporting & MIS", "Purchase Order & Contract Support", "Administrative & Financial Assistance", "Risk Management & Documentation"]
   },
   {
-    category: "Soft Skills",
-    items: ["Creative Problem-Solving", "Effective Time Management", "Critical Thinking", "Active Listening", "Cross-functional Collaboration", "Efficiency Under Pressure"]
+    category: "Languages",
+    items: ["Maithili (Native)", "Nepali (Fluent)", "English (Fluent)", "Hindi (Proficient)"]
   },
   {
     category: "Interests",
-    items: ["Generating Insights from Raw Data", "Making YouTube videos", "Volunteer Work", "Technology Trends"]
+    items: ["Data Analysis & Research", "YouTube Video Creation & Editing", "Volunteer & Community Engagement", "Digital Tools & Systems"]
   }
 ];
 
@@ -204,23 +201,14 @@ export const CURRENCY_RATES: CurrencyRate[] = [
 ];
 
 export const TOOLS: Tool[] = [
-  // 🔥 AI Tools (Gemini Powered)
-  { id: "ai-chat", name: "Gemini Chat", description: "Gemini 3 Pro Chat.", category: "AI Tools", icon: "MessageSquare", componentType: "ai-text", featureId: "chat" },
-  { id: "ai-search", name: "Search Genius", description: "Grounded by Google Search.", category: "AI Tools", icon: "Globe", componentType: "ai-text", featureId: "search" },
-  { id: "ai-maps", name: "Maps Explorer", description: "Grounded by Google Maps.", category: "AI Tools", icon: "MapPin", componentType: "ai-text", featureId: "maps" },
-  { id: "ai-think", name: "Deep Thinker", description: "Gemini 3 Pro Thinking Mode.", category: "AI Tools", icon: "BrainCircuit", componentType: "ai-text", featureId: "think" },
-  { id: "ai-fast", name: "Fast Responder", description: "Low-latency Flash Lite.", category: "AI Tools", icon: "Zap", componentType: "ai-text", featureId: "fast" },
-  
-  { id: "ai-img-gen", name: "Image Generator", description: "Imagen 4 with Aspect Ratio.", category: "AI Tools", icon: "ImageIcon", componentType: "ai-image", featureId: "img-gen" },
-  { id: "ai-img-edit", name: "Image Editor", description: "Edit with Nano Banana.", category: "AI Tools", icon: "Edit", componentType: "ai-image", featureId: "img-edit" },
-  { id: "ai-img-scan", name: "Image Analyst", description: "Analyze with Gemini 3.", category: "AI Tools", icon: "ScanEye", componentType: "ai-image", featureId: "img-scan" },
-
-  { id: "ai-vid-gen", name: "Video Creator", description: "Veo 3 Video Generation.", category: "AI Tools", icon: "Video", componentType: "ai-video", featureId: "vid-gen" },
-  { id: "ai-vid-scan", name: "Video Analyst", description: "Video Understanding.", category: "AI Tools", icon: "Film", componentType: "ai-video", featureId: "vid-scan" },
-
-  { id: "ai-aud-live", name: "Live Conversation", description: "Real-time Voice Chat.", category: "AI Tools", icon: "Mic2", componentType: "ai-audio", featureId: "live" },
-  { id: "ai-aud-trans", name: "Audio Transcriber", description: "Speech to Text.", category: "AI Tools", icon: "FileAudio", componentType: "ai-audio", featureId: "transcribe" },
-  { id: "ai-aud-tts", name: "Text to Speech", description: "Gemini TTS.", category: "AI Tools", icon: "Speaker", componentType: "ai-audio", featureId: "tts" },
+  // 🤖 AI Tools (New)
+  { id: "ai-chat", name: "AI Assistant", description: "Chat with Gemini Pro.", category: "AI Tools", icon: "MessageSquare", componentType: "ai-chat", featureId: "chat-bot" },
+  { id: "ai-fast", name: "Fast AI Chat", description: "Instant answers with Flash Lite.", category: "AI Tools", icon: "Zap", componentType: "ai-text", featureId: "fast" },
+  { id: "ai-think", name: "Deep Thinking", description: "Complex reasoning with Gemini 3.", category: "AI Tools", icon: "BrainCircuit", componentType: "ai-text", featureId: "think" },
+  { id: "ai-gen-img", name: "Pro Image Gen", description: "Generate 1K/2K/4K images.", category: "AI Tools", icon: "ImagePlus", componentType: "ai-image-gen", featureId: "gen-img" },
+  { id: "ai-edit-img", name: "Magic Editor", description: "Edit images with text prompts.", category: "AI Tools", icon: "Wand2", componentType: "ai-image-edit", featureId: "edit-img" },
+  { id: "ai-analyze", name: "Image Analyzer", description: "Understand & analyze photos.", category: "AI Tools", icon: "ScanEye", componentType: "ai-analyze", featureId: "analyze" },
+  { id: "ai-video", name: "Veo Animator", description: "Turn photos into video.", category: "AI Tools", icon: "Film", componentType: "ai-video", featureId: "veo" },
 
   // 🔢 Calculators (Advanced)
   { id: "calc-sci", name: "Scientific Graphic Calc", description: "Advanced math & graphing.", category: "Calculators", icon: "Calculator", componentType: "calculator", featureId: "scientific" },

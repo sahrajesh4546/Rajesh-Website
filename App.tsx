@@ -7,14 +7,13 @@ import Experience from './components/Experience';
 import Skills from './components/Skills';
 import Education from './components/Education';
 import Contact from './components/Contact';
-import AIChat from './components/AIChat';
 import { ThemeProvider } from './components/ThemeContext';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'tools'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'tools' | 'services'>('home');
   const [targetSection, setTargetSection] = useState<string | null>(null);
 
-  const handleNavigate = (view: 'home' | 'tools', sectionId?: string) => {
+  const handleNavigate = (view: 'home' | 'tools' | 'services', sectionId?: string) => {
     setCurrentView(view);
     if (sectionId) {
       setTargetSection(sectionId);
@@ -42,7 +41,7 @@ function App() {
         setTargetSection(null);
       }, 100);
       return () => clearTimeout(timer);
-    } else if (currentView === 'tools' && !targetSection) {
+    } else if ((currentView === 'tools' || currentView === 'services') && !targetSection) {
        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentView, targetSection]);
@@ -54,20 +53,21 @@ function App() {
         
         {currentView === 'home' ? (
           <div className="animate-in fade-in duration-500">
-            <Hero />
-            <Services />
+            <Hero onNavigate={handleNavigate} />
             <Experience />
             <Skills />
             <Education />
             <Contact />
           </div>
-        ) : (
+        ) : currentView === 'tools' ? (
           <div className="pt-20 animate-in slide-in-from-right duration-500">
             <Tools onBack={() => handleNavigate('home')} />
           </div>
+        ) : (
+          <div className="pt-20 animate-in slide-in-from-right duration-500">
+            <Services onBack={() => handleNavigate('home')} />
+          </div>
         )}
-        
-        <AIChat />
       </main>
     </ThemeProvider>
   );

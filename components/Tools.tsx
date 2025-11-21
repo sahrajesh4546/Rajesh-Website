@@ -1,41 +1,41 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { TOOLS, CURRENCY_RATES } from '../constants';
 import { Tool } from '../types';
 import { 
-  generateSpecializedContent, generateAIImage, editAIImage, analyzeImage,
-  generateVideo, pollVideoOperation, analyzeVideo,
-  generateSpeech, transcribeAudio, getLiveClient
+  generateFastContent, generateThinkingContent, 
+  generateProImage, editAIImage, analyzeImageContent, generateVeoVideo,
+  createChatSession
 } from '../services/geminiService';
+
+// Import standard icons
 import { 
-  ArrowLeft, Search, MessageSquare, Image as ImageIcon, PenTool, FileText, 
+  ArrowLeft, Search, MessageSquare, PenTool, FileText, 
   Code2, Maximize, Minimize, Palette, Download, QrCode, Calendar, Calculator, 
-  Activity, Percent, DollarSign, Map, Home, Lock, Type, RefreshCw, Braces, 
-  Speaker, Mic, Sparkles, Loader2, Upload, Copy, ScanText, Layers, Music, File, Files, Trash2,
-  ChevronDown, ArrowRightLeft, History, Zap, RotateCcw, Video, Film, Mic2, BrainCircuit, Globe, MapPin, Edit, ScanEye, FileAudio
+  Activity, Percent, DollarSign, Home, Lock, Type, RefreshCw, Braces, 
+  Speaker, Mic, Sparkles, Loader2, Upload, Copy, ScanText, Layers, Music, Files, Trash2,
+  ChevronDown, ArrowRightLeft, History, Zap, RotateCcw, Video, Film, Mic2, BrainCircuit, Globe, MapPin, Edit, ScanEye, FileAudio, CheckCircle, ImagePlus, Wand2, Send
 } from 'lucide-react';
-import { LiveServerMessage, Modality } from '@google/genai';
+
+// Strictly separate conflicting imports to avoid shadowing global objects (Image, Map, File)
+import {
+  Image as ImageIcon,
+  Map as MapIcon,
+  File as FileIcon
+} from 'lucide-react';
 
 // --- Icon Mapper ---
 const IconMap: Record<string, React.FC<any>> = {
   MessageSquare, ImageIcon, ScanText, PenTool, FileText, Code2, 
   Maximize, Minimize, Palette, QrCode, Download, 
-  Calendar, Calculator, Activity, Percent, DollarSign, Map, Home,
-  Lock, Type, RefreshCw, Braces, Speaker, Mic, Layers, Music, File, Files,
-  Video, Film, Mic2, BrainCircuit, Globe, MapPin, Edit, ScanEye, FileAudio, Zap
+  Calendar, Calculator, Activity, Percent, DollarSign, Map: MapIcon, Home,
+  Lock, Type, RefreshCw, Braces, Speaker, Mic, Layers, Music, File: FileIcon, Files,
+  Video, Film, Mic2, BrainCircuit, Globe, MapPin, Edit, ScanEye, FileAudio, Zap, ImagePlus, Wand2
 };
 
 interface ToolsProps {
   onBack?: () => void;
 }
-
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-  });
-};
 
 const ToolHeader: React.FC<{ tool: Tool }> = ({ tool }) => (
   <div className="mb-8 pb-6 border-b border-slate-200 dark:border-white/10">
@@ -49,128 +49,250 @@ const ToolHeader: React.FC<{ tool: Tool }> = ({ tool }) => (
   </div>
 );
 
-// --- 1. AI Text & Grounding Tools ---
-const AITextTool: React.FC<{ tool: Tool }> = ({ tool }) => {
+// --- AI Chat Tool (Pro 3 Conversational) ---
+const AIChatTool: React.FC<{ tool: Tool }> = ({ tool }) => {
+  const [messages, setMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [input, setInput] = useState('');
-  const [output, setOutput] = useState<{text: string, chunks?: any[]} | null>(null);
   const [loading, setLoading] = useState(false);
+  const chatSession = useRef<any>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  const handleGenerate = async () => {
-    if (!input) return;
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        chatSession.current = await createChatSession();
+      } catch (e) {
+        console.error("Failed to init chat", e);
+      }
+    };
+    initChat();
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !chatSession.current) return;
+    const userMsg = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setLoading(true);
-    setOutput(null);
+
     try {
-      const res = await generateSpecializedContent(
-        input, 
-        tool.featureId as 'chat'|'search'|'maps'|'think'|'fast'
-      );
-      setOutput(res);
+      const result = await chatSession.current.sendMessage({ message: userMsg });
+      setMessages(prev => [...prev, { role: 'model', text: result.text }]);
     } catch (e) {
-      setOutput({text: "Error generating content. Please try again."});
+      setMessages(prev => [...prev, { role: 'model', text: "Error: " + (e as Error).message }]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-surface rounded-2xl p-6 md:p-8 shadow-lg border border-slate-200 dark:border-white/5">
-      <ToolHeader tool={tool} />
-      <div className="space-y-6">
-        <div>
-           <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-             {tool.featureId === 'think' ? 'What complex problem should I solve?' : 'Enter Prompt'}
-           </label>
-           <textarea 
-             className="w-full h-32 p-4 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-secondary outline-none text-slate-900 dark:text-slate-200 font-mono text-sm"
-             placeholder="Type here..."
-             value={input}
-             onChange={(e) => setInput(e.target.value)}
-           />
-        </div>
-        <button 
-          onClick={handleGenerate}
-          disabled={loading || !input}
-          className="w-full py-3 rounded-xl bg-secondary text-white font-bold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
-          {loading ? 'Thinking...' : 'Generate Response'}
-        </button>
-        {output && (
-          <div className="mt-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex items-center justify-between mb-2">
-               <h4 className="font-bold text-slate-900 dark:text-white">Result</h4>
-               <button onClick={() => navigator.clipboard.writeText(output.text)} className="text-xs flex items-center gap-1 text-secondary hover:underline">
-                 <Copy size={14} /> Copy
-               </button>
-            </div>
-            <div className="p-6 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 prose dark:prose-invert max-w-none text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto">
-              {output.text}
-              
-              {/* Grounding Sources */}
-              {output.chunks && output.chunks.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-slate-200 dark:border-white/10">
-                   <h5 className="text-xs font-bold uppercase text-slate-500 mb-2">Sources</h5>
-                   <ul className="space-y-2">
-                     {output.chunks.map((chunk: any, i: number) => (
-                       <li key={i} className="text-xs truncate">
-                         {chunk.web?.uri && (
-                            <a href={chunk.web.uri} target="_blank" rel="noreferrer" className="text-secondary hover:underline flex items-center gap-1">
-                               <Globe size={12} /> {chunk.web.title || chunk.web.uri}
-                            </a>
-                         )}
-                         {chunk.maps && (
-                            <a href={chunk.maps.uri || '#'} target="_blank" rel="noreferrer" className="text-green-500 hover:underline flex items-center gap-1">
-                               <MapPin size={12} /> {chunk.maps.title}
-                            </a>
-                         )}
-                       </li>
-                     ))}
-                   </ul>
+    <div className="max-w-3xl mx-auto bg-surface rounded-2xl p-6 md:p-8 shadow-lg border border-slate-200 dark:border-white/5 flex flex-col h-[700px]">
+       <ToolHeader tool={tool} />
+       <div className="flex-grow overflow-y-auto mb-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 space-y-4">
+          {messages.length === 0 && (
+             <div className="text-center text-slate-400 mt-20">
+                <MessageSquare size={48} className="mx-auto mb-4 opacity-50"/>
+                <p>Start a conversation with Gemini Pro...</p>
+             </div>
+          )}
+          {messages.map((msg, i) => (
+             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] p-4 rounded-2xl ${
+                   msg.role === 'user' 
+                   ? 'bg-secondary text-white rounded-tr-none' 
+                   : 'bg-white dark:bg-white/10 text-slate-800 dark:text-slate-200 rounded-tl-none shadow-sm border border-slate-200 dark:border-white/5'
+                }`}>
+                   <p className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">{msg.text}</p>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+             </div>
+          ))}
+          {loading && (
+             <div className="flex justify-start">
+                <div className="bg-white dark:bg-white/10 p-4 rounded-2xl rounded-tl-none border border-slate-200 dark:border-white/5">
+                   <Loader2 className="animate-spin text-secondary" size={20} />
+                </div>
+             </div>
+          )}
+          <div ref={bottomRef} />
+       </div>
+       <div className="relative">
+          <input
+             value={input}
+             onChange={e => setInput(e.target.value)}
+             onKeyDown={e => { if(e.key === 'Enter') handleSend(); }}
+             placeholder="Type your message..."
+             className="w-full p-4 pr-16 rounded-xl bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-secondary outline-none transition-all"
+             disabled={loading}
+          />
+          <button 
+             onClick={handleSend} 
+             disabled={loading || !input.trim()}
+             className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-secondary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-all"
+          >
+             <Send size={18} />
+          </button>
+       </div>
+    </div>
+  );
+};
+
+// --- AI Text Tool (Fast & Thinking) ---
+const AITextTool: React.FC<{ tool: Tool }> = ({ tool }) => {
+  const [input, setInput] = useState('');
+  const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    setLoading(true);
+    try {
+      const result = tool.featureId === 'fast' 
+        ? await generateFastContent(input)
+        : await generateThinkingContent(input);
+      setResponse(result || "No response generated.");
+    } catch (e) {
+      setResponse("Error: " + (e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto bg-surface rounded-2xl p-6 md:p-8 shadow-lg border border-slate-200 dark:border-white/5">
+      <ToolHeader tool={tool} />
+      <div className="flex flex-col h-[600px]">
+         <div className="flex-grow overflow-y-auto mb-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5">
+           {!response && !loading && <div className="text-center text-slate-400 mt-20">Ask anything...</div>}
+           {loading && (
+             <div className="flex items-center gap-3 text-secondary animate-pulse">
+               <BrainCircuit className="animate-spin" />
+               {tool.featureId === 'think' ? 'Thinking deeply...' : 'Generating fast response...'}
+             </div>
+           )}
+           {response && (
+             <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
+               {response}
+             </div>
+           )}
+         </div>
+         <div className="relative">
+           <textarea
+             value={input}
+             onChange={e => setInput(e.target.value)}
+             onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+             placeholder={tool.featureId === 'think' ? "Ask a complex question (e.g. Math, Coding)..." : "Ask a quick question..."}
+             className="w-full p-4 pr-16 rounded-xl bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 resize-none focus:ring-2 focus:ring-secondary outline-none transition-all"
+             rows={3}
+           />
+           <button 
+             onClick={handleSend} 
+             disabled={loading || !input.trim()}
+             className="absolute right-3 bottom-3 p-2 bg-secondary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-all"
+           >
+             {loading ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}
+           </button>
+         </div>
       </div>
     </div>
   );
 };
 
-// --- 2. AI Image Tools (Gen, Edit, Analyze) ---
-const AIImageTool: React.FC<{ tool: Tool }> = ({ tool }) => {
+// --- AI Image Generation Tool ---
+const AIImageGenTool: React.FC<{ tool: Tool }> = ({ tool }) => {
   const [prompt, setPrompt] = useState('');
-  const [image, setImage] = useState<string | null>(null); // Output image
-  const [inputImage, setInputImage] = useState<string | null>(null); // Input for edit/analyze
-  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [size, setSize] = useState<'1K' | '2K' | '4K'>('1K');
+  const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const base64 = await fileToBase64(e.target.files[0]);
-      setInputImage(base64);
+  const handleGen = async () => {
+    if (!prompt) return;
+    setLoading(true);
+    try {
+      const res = await generateProImage(prompt, size);
+      setImage(res);
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAction = async () => {
-    if (!prompt && tool.featureId !== 'img-scan') return; // Analysis might assume a default prompt?
+  return (
+    <div className="max-w-3xl mx-auto bg-surface rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-white/5">
+      <ToolHeader tool={tool} />
+      <div className="space-y-4">
+        <textarea
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          placeholder="Describe the image you want to create..."
+          className="w-full p-4 rounded-xl bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10"
+          rows={3}
+        />
+        <div className="flex items-center gap-4">
+          <span className="font-bold text-sm">Size:</span>
+          {['1K', '2K', '4K'].map(s => (
+             <button 
+               key={s} 
+               onClick={() => setSize(s as any)}
+               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${size === s ? 'bg-secondary text-white' : 'bg-slate-100 dark:bg-white/10'}`}
+             >
+               {s}
+             </button>
+          ))}
+          <button 
+            onClick={handleGen} 
+            disabled={loading || !prompt}
+            className="ml-auto px-8 py-3 bg-secondary text-white rounded-xl font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-secondary/20 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={18} />} Generate
+          </button>
+        </div>
+      </div>
+      
+      <div className="mt-8 min-h-[300px] flex items-center justify-center bg-slate-100 dark:bg-black/40 rounded-2xl border border-dashed border-slate-300 dark:border-white/10">
+         {loading && <div className="text-center"><Loader2 className="animate-spin mx-auto mb-2 text-secondary" size={32}/><p>Creating masterpiece...</p></div>}
+         {!loading && !image && <div className="text-slate-400">Image will appear here</div>}
+         {image && (
+           <div className="relative group w-full">
+             <img src={image} alt="Generated" className="w-full rounded-xl shadow-lg" />
+             <a href={image} download="generated-ai.png" className="absolute bottom-4 right-4 bg-white text-black px-4 py-2 rounded-full font-bold flex items-center gap-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+               <Download size={16} /> Save
+             </a>
+           </div>
+         )}
+      </div>
+    </div>
+  );
+};
+
+// --- AI Image Editor Tool ---
+const AIImageEditTool: React.FC<{ tool: Tool }> = ({ tool }) => {
+  const [prompt, setPrompt] = useState('');
+  const [preview, setPreview] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(e.target.files?.[0]) {
+      const reader = new FileReader();
+      reader.onload = () => setPreview(reader.result as string);
+      reader.readAsDataURL(e.target.files[0]);
+      setResult(null);
+    }
+  };
+
+  const handleEdit = async () => {
+    if(!preview || !prompt) return;
     setLoading(true);
-    setImage(null);
     try {
-      if (tool.featureId === 'img-gen') {
-        const res = await generateAIImage(prompt, aspectRatio);
-        setImage(res);
-      } else if (tool.featureId === 'img-edit' && inputImage) {
-        const res = await editAIImage(inputImage, prompt);
-        setImage(res);
-      } else if (tool.featureId === 'img-scan' && inputImage) {
-        const res = await analyzeImage(inputImage, prompt || "Describe this image in detail.");
-        // For analysis, we show text, so let's reuse the image state for text display hack or separate?
-        // Better to handle text output separately, but for now let's put it in a data url text? No.
-        // Let's alert or use a specific display.
-        alert(`Analysis Result:\n${res}`); 
-      }
-    } catch (e) {
-      alert("Operation failed.");
+      const res = await editAIImage(preview, prompt);
+      setResult(res);
+    } catch(e) {
+      alert((e as Error).message);
     } finally {
       setLoading(false);
     }
@@ -179,353 +301,184 @@ const AIImageTool: React.FC<{ tool: Tool }> = ({ tool }) => {
   return (
     <div className="max-w-4xl mx-auto bg-surface rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-white/5">
       <ToolHeader tool={tool} />
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-1 space-y-4">
-           {/* Input Image Area for Edit/Scan */}
-           {(tool.featureId === 'img-edit' || tool.featureId === 'img-scan') && (
-             <div className="border-2 border-dashed border-slate-300 dark:border-white/10 rounded-xl p-4 hover:bg-slate-50 dark:hover:bg-white/5 relative text-center">
-                <input type="file" accept="image/*" onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer" />
-                {inputImage ? (
-                  <img src={inputImage} className="h-32 mx-auto object-contain" alt="Input" />
-                ) : (
-                  <div className="py-4 text-slate-500"><Upload className="mx-auto mb-2"/>Upload Source Image</div>
-                )}
-             </div>
-           )}
-
-           {tool.featureId === 'img-gen' && (
-              <div className="flex gap-4">
-                 <select value={aspectRatio} onChange={e=>setAspectRatio(e.target.value)} className="p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-bold">
-                    <option value="1:1">Square (1:1)</option>
-                    <option value="16:9">Landscape (16:9)</option>
-                    <option value="9:16">Portrait (9:16)</option>
-                    <option value="3:4">Portrait (3:4)</option>
-                    <option value="4:3">Landscape (4:3)</option>
-                 </select>
-              </div>
-           )}
-
-           <textarea 
-            value={prompt}
-            onChange={e => setPrompt(e.target.value)}
-            placeholder={tool.featureId === 'img-edit' ? "Describe changes (e.g. 'Add a hat')" : "Describe the image..."}
-            className="w-full h-32 p-4 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-secondary outline-none resize-none"
-           />
-           
-           <button 
-            onClick={handleAction}
-            disabled={loading || (!prompt && tool.featureId !== 'img-scan') || ((tool.featureId === 'img-edit' || tool.featureId === 'img-scan') && !inputImage)}
-            className="w-full py-3 bg-secondary text-white rounded-xl font-bold hover:opacity-90 disabled:opacity-50 flex justify-center items-center gap-2"
-           >
-             {loading ? <Loader2 className="animate-spin" /> : <ImageIcon size={20} />}
-             {tool.featureId === 'img-gen' ? 'Generate' : tool.featureId === 'img-edit' ? 'Edit Image' : 'Analyze'}
-           </button>
-        </div>
-
-        {tool.featureId !== 'img-scan' && (
-          <div className="flex-1 aspect-square bg-slate-100 dark:bg-black/40 rounded-xl border-2 border-dashed border-slate-300 dark:border-white/10 flex items-center justify-center relative overflow-hidden group">
-            {loading ? (
-               <div className="text-center text-slate-500">
-                 <Loader2 size={40} className="animate-spin mx-auto mb-4 text-secondary"/>
-                 <p className="animate-pulse">Processing...</p>
-               </div>
-            ) : image ? (
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="space-y-4">
+           <div className="relative group h-64 bg-slate-100 dark:bg-black/20 rounded-2xl border-2 border-dashed border-slate-300 dark:border-white/10 flex items-center justify-center overflow-hidden">
+             {!preview && (
                <>
-                <img src={image} alt="Result" className="w-full h-full object-contain" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <a href={image} download="ai-image.jpg" className="px-6 py-3 bg-white text-black rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2">
-                    <Download size={20} /> Download
-                  </a>
+                <input type="file" accept="image/*" onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
+                <div className="text-center">
+                  <Upload className="mx-auto mb-2 text-slate-400"/>
+                  <p className="text-sm font-bold">Upload Source Image</p>
                 </div>
                </>
-            ) : (
-               <div className="text-center text-slate-400">
-                 <ImageIcon size={48} className="mx-auto mb-2 opacity-30" />
-                 <p>Result appears here</p>
-               </div>
-            )}
-          </div>
-        )}
+             )}
+             {preview && <img src={preview} className="w-full h-full object-contain" />}
+             {preview && <button onClick={() => {setPreview(null); setResult(null);}} className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full z-20"><Trash2 size={14}/></button>}
+           </div>
+           <textarea 
+             value={prompt} 
+             onChange={e => setPrompt(e.target.value)} 
+             placeholder="E.g. Add a retro filter, Remove person in background..."
+             className="w-full p-3 rounded-xl bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 h-32"
+           />
+           <button onClick={handleEdit} disabled={loading || !preview || !prompt} className="w-full py-3 bg-secondary text-white rounded-xl font-bold hover:shadow-lg disabled:opacity-50">
+             {loading ? 'Editing...' : 'Apply Magic Edit'}
+           </button>
+        </div>
+        <div className="h-full min-h-[300px] bg-slate-100 dark:bg-black/20 rounded-2xl flex items-center justify-center border border-slate-200 dark:border-white/10">
+           {loading && <Loader2 className="animate-spin text-secondary" size={40}/>}
+           {!loading && !result && <p className="text-slate-400">Edited image will appear here</p>}
+           {result && (
+             <div className="relative group w-full h-full">
+               <img src={result} className="w-full h-full object-contain rounded-2xl" />
+               <a href={result} download="edited.png" className="absolute bottom-4 right-4 bg-white text-black px-4 py-2 rounded-full font-bold flex items-center gap-2 shadow-lg">
+                 <Download size={16} /> Save
+               </a>
+             </div>
+           )}
+        </div>
       </div>
     </div>
   );
 };
 
-// --- 3. AI Video Tools ---
-const AIVideoTool: React.FC<{ tool: Tool }> = ({ tool }) => {
+// --- AI Analyzer Tool ---
+const AIAnalyzeTool: React.FC<{ tool: Tool }> = ({ tool }) => {
+  const [preview, setPreview] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
-  const [inputFile, setInputFile] = useState<string | null>(null);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [status, setStatus] = useState('');
+  const [analysis, setAnalysis] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const base64 = await fileToBase64(e.target.files[0]);
-      setInputFile(base64);
-    }
-  };
-
-  const handleGenerate = async () => {
-    setLoading(true);
-    setStatus('Initializing Veo...');
-    try {
-       // Check API Key for Veo
-       if ((window as any).aistudio) {
-          const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-          if(!hasKey) {
-             await (window as any).aistudio.openSelectKey();
-             // Race condition guard as per prompt
-          }
-       }
-
-       const op = await generateVideo(prompt, inputFile || undefined);
-       setStatus('Generating... This may take a minute.');
-       
-       let operation = op;
-       while (!operation.done) {
-         await new Promise(r => setTimeout(r, 5000)); // Poll every 5s
-         operation = await pollVideoOperation(operation.name);
-       }
-       
-       const uri = operation.response?.generatedVideos?.[0]?.video?.uri;
-       if(uri) {
-         // Append key for fetching
-         const apiKey = process.env.API_KEY;
-         setResultUrl(`${uri}&key=${apiKey}`);
-         setStatus('Completed!');
-       } else {
-         setStatus('Failed to get video URI.');
-       }
-    } catch (e: any) {
-       if(e.message?.includes('Requested entity was not found')) {
-         alert("Session expired. Please select API Key again.");
-         if((window as any).aistudio) await (window as any).aistudio.openSelectKey();
-       } else {
-         setStatus('Error: ' + e.message);
-       }
-    } finally {
-       setLoading(false);
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(e.target.files?.[0]) {
+      const reader = new FileReader();
+      reader.onload = () => setPreview(reader.result as string);
+      reader.readAsDataURL(e.target.files[0]);
+      setAnalysis('');
     }
   };
 
   const handleAnalyze = async () => {
-    if(!inputFile) return;
+    if(!preview) return;
     setLoading(true);
-    setStatus('Analyzing video...');
     try {
-       const res = await analyzeVideo(inputFile, 'video/mp4', prompt || "Describe this video.");
-       alert(res);
-       setStatus('Analysis Done.');
-    } catch (e) {
-       setStatus('Error analyzing.');
+      const res = await analyzeImageContent(preview, prompt);
+      setAnalysis(res || "No analysis returned.");
+    } catch(e) {
+      setAnalysis("Error: " + (e as Error).message);
     } finally {
-       setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-surface rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-white/5">
+    <div className="max-w-4xl mx-auto bg-surface rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-white/5">
+      <ToolHeader tool={tool} />
+      <div className="grid md:grid-cols-2 gap-8">
+         <div className="space-y-4">
+           <div className="relative h-64 bg-slate-100 dark:bg-black/20 rounded-2xl border-2 border-dashed border-slate-300 dark:border-white/10 flex items-center justify-center overflow-hidden">
+             {!preview ? (
+                <>
+                  <input type="file" accept="image/*" onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
+                  <div className="text-center text-slate-400">
+                    <ScanEye size={40} className="mx-auto mb-2"/>
+                    <p>Upload Image to Analyze</p>
+                  </div>
+                </>
+             ) : (
+               <img src={preview} className="w-full h-full object-contain" />
+             )}
+             {preview && <button onClick={() => {setPreview(null); setAnalysis('');}} className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full z-20"><Trash2 size={14}/></button>}
+           </div>
+           <input 
+             value={prompt}
+             onChange={e => setPrompt(e.target.value)}
+             placeholder="Optional: Ask specific question about the image..."
+             className="w-full p-3 rounded-xl bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10"
+           />
+           <button onClick={handleAnalyze} disabled={!preview || loading} className="w-full py-3 bg-secondary text-white rounded-xl font-bold hover:shadow-lg disabled:opacity-50">
+             {loading ? 'Analyzing...' : 'Analyze Image'}
+           </button>
+         </div>
+         <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-6 border border-slate-200 dark:border-white/5 overflow-y-auto max-h-[500px]">
+            {!analysis && !loading && <p className="text-slate-400 text-center mt-20">Analysis results will appear here.</p>}
+            {loading && <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-secondary" size={40}/></div>}
+            {analysis && <div className="prose dark:prose-invert">{analysis}</div>}
+         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- AI Video Tool (Veo) ---
+const AIVideoTool: React.FC<{ tool: Tool }> = ({ tool }) => {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(e.target.files?.[0]) {
+      const reader = new FileReader();
+      reader.onload = () => setPreview(reader.result as string);
+      reader.readAsDataURL(e.target.files[0]);
+      setVideoUrl(null);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if(!preview) return;
+    setLoading(true);
+    try {
+      const res = await generateVeoVideo(preview);
+      setVideoUrl(res);
+    } catch(e) {
+      alert((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto bg-surface rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-white/5">
        <ToolHeader tool={tool} />
        <div className="space-y-6">
-          {(tool.featureId === 'vid-gen' || tool.featureId === 'vid-scan') && (
-             <div className="border-2 border-dashed border-slate-300 dark:border-white/10 rounded-xl p-6 text-center relative hover:bg-slate-50 dark:hover:bg-white/5">
-                <input type="file" accept={tool.featureId === 'vid-gen' ? "image/*" : "video/*"} onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer" />
-                {inputFile ? (
-                  <div className="flex items-center justify-center gap-2 font-bold text-secondary">
-                    <File size={20} /> File Selected
+          <div className="relative h-64 bg-slate-100 dark:bg-black/20 rounded-2xl border-2 border-dashed border-slate-300 dark:border-white/10 flex items-center justify-center overflow-hidden group">
+             {!preview ? (
+                <>
+                  <input type="file" accept="image/*" onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
+                  <div className="text-center text-slate-400">
+                    <Film size={40} className="mx-auto mb-2"/>
+                    <p>Upload Image to Animate</p>
                   </div>
-                ) : (
-                  <div className="text-slate-500">
-                    <Upload className="mx-auto mb-2" size={32}/>
-                    <p>{tool.featureId === 'vid-gen' ? 'Optional: Upload Start Image' : 'Upload Video to Analyze'}</p>
-                  </div>
-                )}
-             </div>
+                </>
+             ) : (
+               <img src={preview} className="w-full h-full object-contain" />
+             )}
+             {preview && <button onClick={() => {setPreview(null); setVideoUrl(null);}} className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full z-20"><Trash2 size={14}/></button>}
+          </div>
+          
+          {!videoUrl && (
+            <button onClick={handleGenerate} disabled={!preview || loading} className="w-full py-4 bg-secondary text-white rounded-xl font-bold hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">
+               {loading ? <Loader2 className="animate-spin"/> : <Video size={20} />}
+               {loading ? 'Generating Video (this may take a minute)...' : 'Generate Video with Veo'}
+            </button>
           )}
 
-          <textarea 
-            value={prompt} 
-            onChange={e => setPrompt(e.target.value)} 
-            placeholder={tool.featureId === 'vid-gen' ? "Describe the video to generate..." : "What should I look for in the video?"}
-            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10"
-          />
-
-          <button 
-             onClick={tool.featureId === 'vid-gen' ? handleGenerate : handleAnalyze} 
-             disabled={loading}
-             className="w-full py-4 bg-secondary text-white rounded-xl font-bold flex justify-center items-center gap-2"
-          >
-             {loading ? <Loader2 className="animate-spin"/> : <Video size={20}/>}
-             {tool.featureId === 'vid-gen' ? 'Generate with Veo' : 'Analyze Video'}
-          </button>
-          
-          {status && <p className="text-center text-sm font-mono text-slate-500">{status}</p>}
-
-          {resultUrl && (
-             <video controls autoPlay loop className="w-full rounded-xl shadow-lg mt-6" src={resultUrl}></video>
+          {videoUrl && (
+            <div className="mt-6 animate-in fade-in">
+               <h4 className="font-bold mb-2 flex items-center gap-2"><CheckCircle className="text-green-500" size={20}/> Video Generated!</h4>
+               <video src={videoUrl} controls autoPlay loop className="w-full rounded-xl shadow-lg mb-4" />
+               <a href={videoUrl} download="veo-video.mp4" className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold flex items-center justify-center gap-2">
+                 <Download size={18}/> Download Video
+               </a>
+            </div>
           )}
        </div>
     </div>
   );
 };
 
-// --- 4. AI Audio Tools (Live, Transcribe, TTS) ---
-const AIAudioTool: React.FC<{ tool: Tool }> = ({ tool }) => {
-  const [text, setText] = useState('');
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isLive, setIsLive] = useState(false);
-  const [status, setStatus] = useState('');
-  
-  // Refs for Live API
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
-  
-  const stopLive = () => {
-    if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
-    if (processorRef.current) processorRef.current.disconnect();
-    if (audioContextRef.current) audioContextRef.current.close();
-    setIsLive(false);
-    setStatus('Session Ended');
-  };
-
-  const startLive = async () => {
-    try {
-       const ai = getLiveClient();
-       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-       mediaStreamRef.current = stream;
-       
-       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-       const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-       
-       // Connect to Gemini Live
-       const sessionPromise = ai.live.connect({
-          model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-          callbacks: {
-             onopen: () => setStatus('Connected! Speak now.'),
-             onmessage: async (msg: LiveServerMessage) => {
-                // Handle Audio Output
-                const audioData = msg.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-                if(audioData) {
-                   // Decode and play (Simplified for this snippet, normally needs buffer queue)
-                   const binary = atob(audioData);
-                   const len = binary.length;
-                   const bytes = new Uint8Array(len);
-                   for(let i=0;i<len;i++) bytes[i] = binary.charCodeAt(i);
-                   
-                   // Decoding raw PCM is complex in browser without header, assuming 24k Hz 1ch 
-                   // For this demo, we just acknowledge receipt or try basic decode if context allows.
-                   // Implementing full PCM decode here is too large, we assume the user hears it if we implement full queue.
-                   // For brevity in this update, we mark status.
-                   setStatus('Gemini is speaking...');
-                }
-             },
-             onclose: () => setStatus('Disconnected'),
-             onerror: () => setStatus('Error in connection')
-          },
-          config: {
-             responseModalities: [Modality.AUDIO],
-             speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } }
-          }
-       });
-
-       // Setup Input Stream
-       const source = audioContextRef.current.createMediaStreamSource(stream);
-       processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-       
-       processorRef.current.onaudioprocess = (e) => {
-          const inputData = e.inputBuffer.getChannelData(0);
-          // Convert float32 to int16 pcm
-          const l = inputData.length;
-          const buf = new Int16Array(l);
-          for(let i=0; i<l; i++) buf[i] = inputData[i] * 32768;
-          
-          const binary = String.fromCharCode(...new Uint8Array(buf.buffer));
-          const base64 = btoa(binary);
-          
-          sessionPromise.then(session => {
-             session.sendRealtimeInput({
-                media: { mimeType: 'audio/pcm;rate=16000', data: base64 }
-             });
-          });
-       };
-
-       source.connect(processorRef.current);
-       processorRef.current.connect(audioContextRef.current.destination);
-       
-       setIsLive(true);
-    } catch (e) {
-       console.error(e);
-       setStatus('Failed to start live session');
-    }
-  };
-
-  const handleAction = async () => {
-    if(tool.featureId === 'tts') {
-       const b64 = await generateSpeech(text);
-       if(b64) {
-         // Convert base64 PCM to wav or play directly if possible. 
-         // Since browser <audio> doesn't play raw PCM, we need a WAV header or AudioContext.
-         // Simplified: we assume we can't play raw easily without code, so let's pretend we got a wav or use a helper.
-         // Actually the prompt says "Audio Encoding & Decoding" must be implemented.
-         // For the sake of this "update file", I will output a status.
-         setStatus('Audio Generated (PCM format).'); 
-         // Real implementation would involve adding a RIFF header.
-       }
-    }
-    else if (tool.featureId === 'transcribe') {
-        // Assuming file upload for simplicity in this view, or mock record
-        alert("Please use the file upload for transcription in this demo version.");
-    }
-  };
-  
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-     if(e.target.files?.[0]) {
-        const b64 = await fileToBase64(e.target.files[0]);
-        const res = await transcribeAudio(b64, 'audio/mp3');
-        setText(res);
-     }
-  }
-
-  return (
-     <div className="max-w-xl mx-auto bg-surface rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-white/5">
-        <ToolHeader tool={tool} />
-        
-        {tool.featureId === 'live' && (
-           <div className="text-center">
-              <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center mb-8 transition-all ${isLive ? 'bg-red-500 animate-pulse shadow-[0_0_40px_rgba(239,68,68,0.6)]' : 'bg-secondary'}`}>
-                 <Mic2 size={48} className="text-white" />
-              </div>
-              <button onClick={isLive ? stopLive : startLive} className="px-8 py-3 rounded-full font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:scale-105 transition-transform">
-                 {isLive ? 'End Conversation' : 'Start Live Chat'}
-              </button>
-              <p className="mt-4 text-slate-500 font-mono text-sm">{status}</p>
-           </div>
-        )}
-
-        {tool.featureId === 'tts' && (
-           <div className="space-y-4">
-              <textarea className="w-full p-4 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10" value={text} onChange={e=>setText(e.target.value)} placeholder="Type text to speak..." />
-              <button onClick={handleAction} className="w-full py-3 bg-secondary text-white rounded-xl font-bold">Generate Speech</button>
-              {status && <p className="text-center text-xs text-slate-500">{status}</p>}
-           </div>
-        )}
-
-        {tool.featureId === 'transcribe' && (
-           <div className="space-y-6">
-              <div className="border-2 border-dashed border-slate-300 dark:border-white/10 rounded-xl p-8 text-center relative">
-                 <input type="file" accept="audio/*" onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer" />
-                 <FileAudio size={40} className="mx-auto mb-2 text-slate-400"/>
-                 <p>Upload Audio File</p>
-              </div>
-              {text && <div className="p-4 bg-slate-100 dark:bg-white/5 rounded-xl text-sm font-mono">{text}</div>}
-           </div>
-        )}
-     </div>
-  );
-};
 
 // --- Image Tools (Resizer, Compressor, Color, QR, YT) ---
 const ImageTool: React.FC<{ tool: Tool }> = ({ tool }) => {
@@ -545,7 +498,7 @@ const ImageTool: React.FC<{ tool: Tool }> = ({ tool }) => {
       setPreviewUrl(url);
       setProcessedUrl(null);
       
-      const img = new Image();
+      const img = new window.Image(); // Explicitly use window.Image
       img.onload = () => {
         setParams(prev => ({ ...prev, w: img.width, h: img.height }));
         if (tool.featureId === 'color' && canvasRef.current) {
@@ -586,7 +539,7 @@ const ImageTool: React.FC<{ tool: Tool }> = ({ tool }) => {
     if (!previewUrl) return;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const img = new Image();
+    const img = new window.Image(); // Explicitly use window.Image
     img.onload = () => {
       if (tool.featureId === 'resizer') {
         canvas.width = params.w;
@@ -858,71 +811,96 @@ const CalculatorTool: React.FC<{ tool: Tool }> = ({ tool }) => {
   // --- RENDER ---
 
   if (tool.featureId === 'scientific') {
-      const btnClass = "h-14 rounded-xl font-bold text-lg transition-all active:scale-95 flex items-center justify-center shadow-sm";
-      const numClass = `${btnClass} bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10`;
-      const opClass = `${btnClass} bg-secondary/10 text-secondary hover:bg-secondary/20`;
-      const fnClass = `${btnClass} bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-300 dark:hover:bg-white/20`;
-      const eqClass = `${btnClass} bg-secondary text-white hover:bg-secondary/90 shadow-secondary/30 shadow-lg`;
-      const delClass = `${btnClass} bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30`;
+      // Refined Button Styles for Distinct Visual Hierarchy
+      const btnBase = "h-14 md:h-16 rounded-2xl font-bold text-lg md:text-xl transition-all active:scale-95 flex items-center justify-center shadow-sm relative overflow-hidden group select-none border";
+      
+      // 1. Numbers (White/Dark Slate)
+      const numClass = `${btnBase} bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600`;
+      
+      // 2. Operators (Distinct Indigo Tint)
+      const opClass = `${btnBase} bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50`;
+      
+      // 3. Functions (Subtle Gray/Slate)
+      const fnClass = `${btnBase} bg-slate-100 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-base font-medium hover:bg-slate-200 dark:hover:bg-slate-800`;
+      
+      // 4. Actions (Delete/Clear - Red Tint)
+      const delClass = `${btnBase} bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40`;
+      
+      // 5. Equals (Primary Gradient)
+      const eqClass = `${btnBase} bg-gradient-to-br from-secondary to-primary border-transparent text-white shadow-lg shadow-primary/30 hover:brightness-110 transform hover:-translate-y-1`;
+
+      // Graph Toggle State
+      const graphBtnClass = (active: boolean) => `${fnClass} ${active ? 'ring-2 ring-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20' : ''}`;
 
       return (
-        <div className="max-w-md mx-auto bg-surface rounded-3xl p-6 shadow-2xl shadow-slate-300/50 dark:shadow-black/50 border border-slate-200 dark:border-white/5">
+        <div className="max-w-md mx-auto bg-surface rounded-[2.5rem] p-6 md:p-8 shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-slate-200 dark:border-white/5 backdrop-blur-xl">
            <ToolHeader tool={tool} />
            
-           {/* Display */}
-           <div className="bg-slate-100 dark:bg-black/40 p-6 rounded-2xl mb-6 text-right border-inner border-slate-200 dark:border-white/5 shadow-inner">
-             <div className="text-xs text-slate-400 h-4">{calcDisplay.includes('x') ? 'Function Mode' : ''}</div>
-             <div className="text-3xl font-mono font-bold text-slate-800 dark:text-white overflow-x-auto whitespace-nowrap scrollbar-hide">{calcDisplay || '0'}</div>
+           {/* Calculator Display */}
+           <div className="bg-slate-50 dark:bg-black/40 p-6 rounded-3xl mb-6 text-right border border-slate-200 dark:border-white/5 shadow-inner min-h-[120px] flex flex-col justify-between relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
+             {/* Mode Indicators */}
+             <div className="flex justify-end gap-2 mb-2 h-6">
+                {calcDisplay.includes('x') && (
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 text-[10px] font-bold border border-indigo-500/20 animate-in fade-in">
+                    f(x)
+                  </span>
+                )}
+                {graphMode && (
+                  <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-500 text-[10px] font-bold border border-purple-500/20 animate-in fade-in">
+                    GRAPH
+                  </span>
+                )}
+             </div>
+             <div className="text-4xl md:text-5xl font-mono font-medium text-slate-800 dark:text-white overflow-x-auto whitespace-nowrap scrollbar-hide tracking-tight pb-1">
+                {calcDisplay || '0'}
+             </div>
            </div>
 
            {/* Graph Area */}
            {graphMode && (
-             <div className="mb-6 bg-white dark:bg-black rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 relative h-48">
+             <div className="mb-6 bg-white dark:bg-black rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 relative h-48 shadow-inner animate-in fade-in slide-in-from-top-4 duration-300">
                 <canvas ref={canvasRef} width={300} height={200} className="w-full h-full" />
-                <div className="absolute bottom-2 right-2 text-[10px] text-slate-400">x: -10 to 10</div>
+                <div className="absolute bottom-3 right-4 text-[10px] font-mono text-slate-500 bg-surface/90 px-3 py-1 rounded-full backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-sm">
+                   Range: -10 to 10
+                </div>
              </div>
            )}
 
-           {/* Keypad */}
-           <div className="grid grid-cols-4 gap-3">
-              {/* Row 1 */}
+           {/* Keypad Grid */}
+           <div className="grid grid-cols-4 gap-3 md:gap-4">
+              {/* Scientific Functions Row */}
               <button onClick={() => handleScientific('sin')} className={fnClass}>sin</button>
               <button onClick={() => handleScientific('cos')} className={fnClass}>cos</button>
               <button onClick={() => handleScientific('tan')} className={fnClass}>tan</button>
               <button onClick={() => handleScientific('DEL')} className={delClass}>DEL</button>
               
-              {/* Row 2 */}
-              <button onClick={() => handleScientific('(')} className={fnClass}>(</button>
+              <button onClick={() => handleScientific('(')} className={fnClass}>>(</button>
               <button onClick={() => handleScientific(')')} className={fnClass}>)</button>
               <button onClick={() => handleScientific('^')} className={fnClass}>^</button>
               <button onClick={() => handleScientific('/')} className={opClass}>÷</button>
 
-              {/* Row 3 */}
               <button onClick={() => handleScientific('7')} className={numClass}>7</button>
               <button onClick={() => handleScientific('8')} className={numClass}>8</button>
               <button onClick={() => handleScientific('9')} className={numClass}>9</button>
               <button onClick={() => handleScientific('*')} className={opClass}>×</button>
 
-              {/* Row 4 */}
               <button onClick={() => handleScientific('4')} className={numClass}>4</button>
               <button onClick={() => handleScientific('5')} className={numClass}>5</button>
               <button onClick={() => handleScientific('6')} className={numClass}>6</button>
               <button onClick={() => handleScientific('-')} className={opClass}>−</button>
 
-              {/* Row 5 */}
               <button onClick={() => handleScientific('1')} className={numClass}>1</button>
               <button onClick={() => handleScientific('2')} className={numClass}>2</button>
               <button onClick={() => handleScientific('3')} className={numClass}>3</button>
               <button onClick={() => handleScientific('+')} className={opClass}>+</button>
 
-              {/* Row 6 */}
-              <button onClick={() => handleScientific('0')} className={`${numClass} col-span-2`}>0</button>
+              <button onClick={() => handleScientific('0')} className={`${numClass} col-span-2 rounded-2xl`}>0</button>
               <button onClick={() => handleScientific('.')} className={numClass}>.</button>
               <button onClick={() => handleScientific('=')} className={eqClass}>=</button>
 
-              {/* Row 7 (Extra) */}
-              <button onClick={() => handleScientific('x')} className={`${fnClass} text-secondary font-serif italic`}>x</button>
-              <button onClick={() => handleScientific('graph')} className={`${fnClass} ${graphMode ? 'bg-secondary text-white hover:bg-secondary' : ''}`}>Graph</button>
+              {/* Bottom Actions */}
+              <button onClick={() => handleScientific('x')} className={`${fnClass} text-indigo-500 font-serif italic font-bold`}>x</button>
+              <button onClick={() => handleScientific('graph')} className={graphBtnClass(graphMode)}>Graph</button>
               <button onClick={() => handleScientific('log')} className={fnClass}>log</button>
               <button onClick={() => handleScientific('C')} className={delClass}>AC</button>
            </div>
@@ -999,7 +977,7 @@ const CalculatorTool: React.FC<{ tool: Tool }> = ({ tool }) => {
               {/* Hill System */}
               <div className="space-y-4 bg-slate-50 dark:bg-white/5 p-6 rounded-2xl border border-slate-200 dark:border-white/5">
                  <div className="flex items-center gap-2 mb-2">
-                   <Map size={18} className="text-secondary" />
+                   <MapIcon size={18} className="text-secondary" />
                    <h4 className="font-bold text-slate-900 dark:text-white">Hill System</h4>
                  </div>
                  <div className="grid grid-cols-2 gap-4">
@@ -1116,8 +1094,6 @@ const UtilityTool: React.FC<{ tool: Tool }> = ({ tool }) => {
   return null;
 };
 
-import { CheckCircle } from 'lucide-react';
-
 // --- Main Component ---
 const Tools: React.FC<ToolsProps> = ({ onBack }) => {
   const [activeToolId, setActiveToolId] = useState<string | null>(null);
@@ -1135,10 +1111,12 @@ const Tools: React.FC<ToolsProps> = ({ onBack }) => {
   const renderTool = () => {
     if (!activeTool) return null;
     switch(activeTool.componentType) {
+      case 'ai-chat': return <AIChatTool tool={activeTool} />;
       case 'ai-text': return <AITextTool tool={activeTool} />;
-      case 'ai-image': return <AIImageTool tool={activeTool} />;
+      case 'ai-image-gen': return <AIImageGenTool tool={activeTool} />;
+      case 'ai-image-edit': return <AIImageEditTool tool={activeTool} />;
+      case 'ai-analyze': return <AIAnalyzeTool tool={activeTool} />;
       case 'ai-video': return <AIVideoTool tool={activeTool} />;
-      case 'ai-audio': return <AIAudioTool tool={activeTool} />;
       case 'image': return <ImageTool tool={activeTool} />;
       case 'calculator': return <CalculatorTool tool={activeTool} />;
       case 'utility': return <UtilityTool tool={activeTool} />;
@@ -1167,7 +1145,7 @@ const Tools: React.FC<ToolsProps> = ({ onBack }) => {
           <>
             <div className="text-center max-w-3xl mx-auto mb-12 pt-6">
               <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-secondary via-primary to-accent">Digital Toolkit</h1>
-              <p className="text-lg text-slate-600 dark:text-slate-400">Advanced Calculations, Media Processing & Gemini AI Powered Utilities</p>
+              <p className="text-lg text-slate-600 dark:text-slate-400">Advanced Calculations, Media Processing & AI</p>
             </div>
 
             <div className="flex flex-wrap justify-center gap-2 mb-10 sticky top-24 z-20 py-4 bg-background/95 backdrop-blur-sm border-b border-slate-200 dark:border-white/5">

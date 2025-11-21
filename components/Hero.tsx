@@ -2,7 +2,11 @@ import React from 'react';
 import { ArrowRight, Briefcase, MapPin, Mail, Phone } from 'lucide-react';
 import { PERSONAL_INFO } from '../constants';
 
-const Hero: React.FC = () => {
+interface HeroProps {
+  onNavigate: (view: 'home' | 'tools' | 'services', sectionId?: string) => void;
+}
+
+const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
   const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     const element = document.querySelector(href);
@@ -34,7 +38,20 @@ const Hero: React.FC = () => {
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-sm text-secondary text-sm font-medium mb-8 animate-fade-in-up shadow-lg shadow-purple-500/10">
+          
+          {/* Profile Picture */}
+          <div className="mb-8 relative inline-block animate-fade-in-up">
+            <div className="absolute inset-0 bg-gradient-to-tr from-secondary to-primary rounded-full blur-xl opacity-50 animate-pulse"></div>
+            <img 
+              src="https://i.imgur.com/4g3MmNf.jpeg" 
+              alt={PERSONAL_INFO.name} 
+              className="relative w-40 h-40 md:w-48 md:h-48 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-2xl mx-auto z-10"
+            />
+          </div>
+
+          <br />
+
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-sm text-secondary text-sm font-medium mb-8 animate-fade-in-up shadow-lg shadow-purple-500/10 [animation-delay:100ms]">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
@@ -59,13 +76,12 @@ const Hero: React.FC = () => {
             >
               Contact Me <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
             </a>
-            <a 
-              href="#services" 
-              onClick={(e) => handleScrollTo(e, '#services')}
+            <button 
+              onClick={() => onNavigate('services')}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white dark:bg-white/5 text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-all hover:-translate-y-1 backdrop-blur-sm shadow-sm"
             >
               View Services <Briefcase size={20} />
-            </a>
+            </button>
           </div>
 
           <div className="flex flex-wrap justify-center gap-6 md:gap-10 text-slate-500 dark:text-slate-400 text-sm font-medium border-t border-slate-200 dark:border-white/5 pt-8 max-w-3xl mx-auto animate-fade-in-up [animation-delay:800ms]">

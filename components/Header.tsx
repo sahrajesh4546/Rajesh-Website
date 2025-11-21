@@ -3,8 +3,8 @@ import { Menu, X, BarChart3, Sun, Moon } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 
 interface HeaderProps {
-  currentView: 'home' | 'tools';
-  onNavigate: (view: 'home' | 'tools', sectionId?: string) => void;
+  currentView: 'home' | 'tools' | 'services';
+  onNavigate: (view: 'home' | 'tools' | 'services', sectionId?: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
@@ -22,8 +22,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
 
   const navItems = [
     { name: 'Home', href: '#hero' },
-    { name: 'Services', href: '#services' },
-    { name: 'AI Tools', href: 'tools' },
+    { name: 'Services', href: 'services' },
+    { name: 'Tools', href: 'tools' },
     { name: 'Experience', href: '#experience' },
     { name: 'Skills', href: '#skills' },
     { name: 'Education', href: '#education' },
@@ -34,8 +34,10 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
     e.preventDefault();
     setIsOpen(false);
 
-    if (item.name === 'AI Tools') {
+    if (item.name === 'Tools') {
       onNavigate('tools');
+    } else if (item.name === 'Services') {
+      onNavigate('services');
     } else {
       onNavigate('home', item.href);
     }
@@ -45,6 +47,13 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
     e.preventDefault();
     setIsOpen(false);
     onNavigate('home', '#hero');
+  };
+
+  const isActive = (item: { name: string; href: string }) => {
+    if (currentView === 'tools' && item.name === 'Tools') return true;
+    if (currentView === 'services' && item.name === 'Services') return true;
+    if (currentView === 'home' && item.name === 'Home' && !scrolled) return true;
+    return false;
   };
 
   return (
@@ -76,14 +85,14 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item)}
                 className={`text-sm font-medium transition-all relative group ${
-                  (currentView === 'tools' && item.name === 'AI Tools') || (currentView === 'home' && item.name === 'Home' && !scrolled)
+                  isActive(item)
                     ? 'text-secondary'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:scale-105'
                 }`}
               >
                 {item.name}
                 <span className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-secondary to-primary transition-all ${
-                   (currentView === 'tools' && item.name === 'AI Tools') ? 'w-full' : 'w-0 group-hover:w-full'
+                   isActive(item) ? 'w-full' : 'w-0 group-hover:w-full'
                 }`}></span>
               </a>
             ))}
@@ -124,7 +133,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate }) => {
                 key={item.name}
                 href={item.href}
                 className={`text-base font-medium px-4 py-3 rounded-lg transition-all ${
-                  (currentView === 'tools' && item.name === 'AI Tools')
+                  isActive(item)
                   ? 'bg-secondary/10 text-secondary'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
                 }`}
