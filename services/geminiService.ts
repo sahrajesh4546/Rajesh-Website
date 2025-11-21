@@ -21,7 +21,7 @@ export const checkApiKey = async () => {
 export const generateFastContent = async (prompt: string) => {
   const ai = getClient();
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-lite',
+    model: 'gemini-flash-lite-latest',
     contents: prompt,
   });
   return response.text;
