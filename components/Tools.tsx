@@ -874,7 +874,7 @@ const CalculatorTool: React.FC<{ tool: Tool }> = ({ tool }) => {
               <button onClick={() => handleScientific('tan')} className={fnClass}>tan</button>
               <button onClick={() => handleScientific('DEL')} className={delClass}>DEL</button>
               
-              <button onClick={() => handleScientific('(')} className={fnClass}>>(</button>
+              <button onClick={() => handleScientific('(')} className={fnClass}>(</button>
               <button onClick={() => handleScientific(')')} className={fnClass}>)</button>
               <button onClick={() => handleScientific('^')} className={fnClass}>^</button>
               <button onClick={() => handleScientific('/')} className={opClass}>÷</button>
