@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ArrowRight, Briefcase, MapPin, Mail, Phone } from 'lucide-react';
 import { PERSONAL_INFO } from '../constants';
@@ -26,6 +27,9 @@ const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
     <section id="hero" className="relative pt-20 pb-32 md:pt-32 md:pb-48 overflow-hidden bg-background transition-colors duration-300">
       {/* Background Decor */}
       <div className="absolute inset-0 z-0">
+        {/* Abstract Data Image Overlay */}
+        <div className="absolute inset-0 bg-cover bg-center opacity-10 dark:opacity-20 mix-blend-overlay pointer-events-none" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")' }}></div>
+
         {/* Grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(99,102,241,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(99,102,241,0.05)_1px,transparent_1px)] bg-[size:40px_40px] dark:bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)]"></div>
         

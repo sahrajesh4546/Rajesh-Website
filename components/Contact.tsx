@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { PERSONAL_INFO } from '../constants';
 import { Mail, Phone, MapPin, Linkedin, MessageCircle } from 'lucide-react';
@@ -83,21 +84,20 @@ const Contact: React.FC = () => {
               </div>
             </div>
             
-            {/* Decorative Side */}
-            <div className="relative h-64 lg:h-auto bg-slate-900 lg:order-2 overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 via-primary/10 to-background"></div>
+            {/* Decorative Side - Data Dashboard Image */}
+            <div className="relative h-64 lg:h-auto bg-slate-900 lg:order-2 overflow-hidden group">
+               {/* Background Image */}
+               <div className="absolute inset-0 bg-cover bg-center opacity-60 mix-blend-overlay transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop")' }}></div>
                
-               {/* Abstract shapes */}
-               <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/30 rounded-full mix-blend-screen filter blur-3xl translate-x-1/2 -translate-y-1/2"></div>
-               <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/30 rounded-full mix-blend-screen filter blur-3xl -translate-x-1/2 translate-y-1/2"></div>
+               <div className="absolute inset-0 bg-gradient-to-br from-secondary/80 via-primary/60 to-background/90 mix-blend-multiply"></div>
                
                <div className="absolute inset-0 flex items-center justify-center p-12">
-                 <div className="text-center relative z-10">
-                    <div className="inline-block p-4 bg-white/10 backdrop-blur-md rounded-2xl mb-6 border border-white/10 shadow-2xl">
-                        <MessageCircle size={48} className="text-secondary" />
+                 <div className="text-center relative z-10 animate-fade-in-up">
+                    <div className="inline-block p-4 bg-white/10 backdrop-blur-md rounded-2xl mb-6 border border-white/20 shadow-2xl">
+                        <MessageCircle size={48} className="text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-4">Have a project in mind?</h3>
-                    <p className="text-slate-300">
+                    <h3 className="text-2xl font-bold text-white mb-4 drop-shadow-md">Have a project in mind?</h3>
+                    <p className="text-slate-100 font-medium drop-shadow-sm max-w-sm mx-auto">
                         I'm always open to discussing new projects, creative ideas or opportunities to be part of your visions.
                     </p>
                  </div>
